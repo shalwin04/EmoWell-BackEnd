@@ -8,6 +8,10 @@ logs/
 *.log
 *.log.*
 
+# Build Files
+dist/
+build/
+
 # Dependency directories
 jspm_packages/
 
