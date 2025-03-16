@@ -8,7 +8,7 @@ import { createReactAgent } from "@langchain/langgraph/prebuilt";
 
 dotenv.config();
 
-const API_KEY = process.env.GEMINI_API_KEY;
+const API_KEY = process.env.GOOGLE_API_KEY;
 
 const model = new ChatGoogleGenerativeAI({
   model: "gemini-2.0-flash",
