@@ -1,76 +1,66 @@
-import express from "express";
+import express, {
+  Application,
+  Request,
+  Response,
+  RequestHandler,
+} from "express";
 import dotenv from "dotenv";
-import { TherapyAgent } from "./agents/therapyAgent.js";
 import { HumanMessage } from "@langchain/core/messages";
-import { SupabaseVectorStore } from "@langchain/community/vectorstores/supabase";
-import { createClient } from "@supabase/supabase-js";
-import { GraphState } from "./agents/graphState.js";
 import { compiledGraph } from "./agents/graph.js";
 
 dotenv.config();
 
-const app = express();
+const app: Application = express();
 const PORT = process.env.PORT || 3000;
+app.use(express.json());
 
-// async function startTherapySession() {
-//   const agentFinalState = await TherapyAgent.invoke(
-//     { messages: [new HumanMessage("Hey, I'm feeling a bit down today")] },
-//     { configurable: { thread_id: "42" } }
-//   );
-
-//   console.log(
-//     agentFinalState.messages[agentFinalState.messages.length - 1].content
-//   );
-// }
-
-const runAgent = async (question: string) => {
-  const inputs = { question };
-  const config = { recursionLimit: 50 };
-
-  const prettifyOutput = (output: Record<string, any>) => {
-    const key = Object.keys(output)[0];
-    const value = output[key];
-    console.log(`Node: '${key}'`);
-    if (key === "retrieve" && "documents" in value) {
-      console.log(`Retrieved ${value.documents.length} documents.`);
-    } else if (key === "gradeDocuments" && "documents" in value) {
-      console.log(
-        `Graded documents. Found ${value.documents.length} relevant document(s).`
-      );
-    } else {
-      console.dir(value, { depth: null });
-    }
+// ✅ Run the agent and return a response
+const runAgent = async (question: string): Promise<string> => {
+  const inputs = {
+    question,
+    startTime: Date.now(), // ⏱️ Add this line to track time
   };
 
-  console.log("\n--- Starting LangGraph Execution ---\n");
+  const config = { recursionLimit: 50 };
+  let assistantResponse = "I'm here to listen. How are you feeling today?";
 
   for await (const output of await compiledGraph.stream(inputs, config)) {
-    prettifyOutput(output);
-    console.log("\n--- ITERATION END ---\n");
+    const key = Object.keys(output)[0];
+    const value = output[key];
+
+    if (key === "TherapyResponse" && "therapyResponse" in value) {
+      assistantResponse = value.therapyResponse;
+    }
   }
 
-  console.log("\n--- Execution Complete ---\n");
+  console.log("Final Assistant Response:", assistantResponse);
+  return assistantResponse;
 };
 
-// Example usage
-runAgent("Hey, I'm feeling a bit down today");
+// ✅ Correct TypeScript typing: `Promise<void>` instead of `Promise<Response>`
+const chatHandler: RequestHandler = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { message } = req.body;
+    if (!message) {
+      res.status(400).json({ error: "Message is required" });
+      return;
+    }
 
-// startTherapySession();
+    const response: string = await runAgent(message);
+    res.json({ response }); // ✅ No need to `return`
+  } catch (error) {
+    console.error("Error processing chat:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
 
-// const supabasePrivateKey = process.env.SUPABASE_KEY as string;
-// const supabaseUrl = process.env.SUPABASE_URL as string;
+// ✅ Attach the handler separately
+app.post("/chat", chatHandler);
 
-// const supabase = createClient(supabaseUrl, supabasePrivateKey);
-
-// const agentFinalState = await agent.invoke(
-//   { messages: [new HumanMessage("what is the current weather in sf")] },
-//   { configurable: { thread_id: "42" } }
-// );
-
-// console.log(
-//   agentFinalState.messages[agentFinalState.messages.length - 1].content
-// );
-
-// app.listen(PORT, () => {
-//   console.log(`🚀 Server running on http://localhost:${PORT}`);
-// });
+// ✅ Single `app.listen()` call
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
+});

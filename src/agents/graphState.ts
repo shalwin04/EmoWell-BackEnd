@@ -9,6 +9,9 @@ export const GraphState = Annotation.Root({
   question: Annotation<string>({
     reducer: (x, y) => y ?? x ?? "",
   }),
+  therapyResponse: Annotation<string>({
+    reducer: (x, y) => y ?? x ?? "",
+  }),
   generation: Annotation<string>({
     reducer: (x, y) => y ?? x,
     default: () => "",
@@ -17,6 +20,11 @@ export const GraphState = Annotation.Root({
     reducer: (x, y) => y ?? x,
   }),
   generationVDocumentsGrade: Annotation<string>({
+    reducer: (x, y) => y ?? x,
+  }),
+
+  // 👇 Add this
+  startTime: Annotation<number>({
     reducer: (x, y) => y ?? x,
   }),
 });

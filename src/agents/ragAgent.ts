@@ -176,22 +176,29 @@ export async function transformQuery(
 
 /**
  * Determines whether to generate an answer, or re-generate a question.
+ * If processing takes too long, it directly moves to TherapyResponse.
  *
  * @param {typeof GraphState.State} state The current state of the graph.
- * @returns {"transformQuery" | "generate"} Next node to call
+ * @returns {"transformQuery" | "generate" | "TherapyResponse"} Next node to call
  */
 export function decideToGenerate(state: typeof GraphState.State) {
   console.log("---DECIDE TO GENERATE---");
 
+  const TIMEOUT_THRESHOLD = 3000; // 3 seconds (adjust as needed)
+  const startTime = state.startTime || Date.now();
+  const duration = Date.now() - startTime;
+
+  if (duration > TIMEOUT_THRESHOLD) {
+    console.log("---DECISION: TIMEOUT - THERAPY RESPONSE---");
+    return "TherapyResponse";
+  }
+
   const filteredDocs = state.documents;
   if (filteredDocs.length === 0) {
-    // All documents have been filtered checkRelevance
-    // We will re-generate a new query
     console.log("---DECISION: TRANSFORM QUERY---");
     return "transformQuery";
   }
 
-  // We have relevant documents, so generate answer
   console.log("---DECISION: GENERATE---");
   return "generate";
 }
