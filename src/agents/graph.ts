@@ -13,6 +13,7 @@ import {
   gradeGenerationVDocuments,
 } from "./ragAgent.js";
 import { TherapyResponse } from "./therapyAgent.js";
+import { MemorySaver } from "@langchain/langgraph";
 
 const workflow = new StateGraph(GraphState)
   // Define the nodes
@@ -56,8 +57,8 @@ workflow.addEdge("TherapyResponse", END);
 //     "not useful": "transformQuery",
 //   }
 // );
-
+const checkpointer = new MemorySaver();
 // Compile
-const compiledGraph = workflow.compile();
+const compiledGraph = workflow.compile({ checkpointer });
 
 export { compiledGraph };

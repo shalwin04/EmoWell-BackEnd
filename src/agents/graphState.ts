@@ -1,8 +1,12 @@
 import { Annotation } from "@langchain/langgraph";
 import { type DocumentInterface } from "@langchain/core/documents";
+import { BaseMessage } from "@langchain/core/messages";
 
 // Represents the state of our graph.
 export const GraphState = Annotation.Root({
+  messages: Annotation<BaseMessage[]>({
+    reducer: (x, y) => x.concat(y),
+  }),
   documents: Annotation<DocumentInterface[]>({
     reducer: (x, y) => y ?? x ?? [],
   }),
@@ -22,8 +26,6 @@ export const GraphState = Annotation.Root({
   generationVDocumentsGrade: Annotation<string>({
     reducer: (x, y) => y ?? x,
   }),
-
-  // 👇 Add this
   startTime: Annotation<number>({
     reducer: (x, y) => y ?? x,
   }),

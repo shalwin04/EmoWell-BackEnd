@@ -20,8 +20,8 @@ const runAgent = async (question: string): Promise<string> => {
     question,
     startTime: Date.now(), // ⏱️ Add this line to track time
   };
+  let config = { configurable: { thread_id: "convo-1" } };
 
-  const config = { recursionLimit: 50 };
   let assistantResponse = "I'm here to listen. How are you feeling today?";
 
   for await (const output of await compiledGraph.stream(inputs, config)) {
