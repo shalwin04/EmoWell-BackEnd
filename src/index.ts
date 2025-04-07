@@ -7,6 +7,8 @@ import express, {
 import dotenv from "dotenv";
 import { HumanMessage } from "@langchain/core/messages";
 import { compiledGraph } from "./agents/graph.js";
+import { ingestAndStoreDocs } from "./utils/ingestAndSToreDocs.js";
+import { getRetriever } from "./agents/retriever.js";
 
 dotenv.config();
 
@@ -14,6 +16,9 @@ const app: Application = express();
 const PORT = process.env.PORT || 3000;
 app.use(express.json());
 
+// const retriever = await getRetriever();
+// const results = await retriever.invoke("How to help someone with anxiety?");
+// console.log(results);
 // ✅ Run the agent and return a response
 const runAgent = async (question: string): Promise<string> => {
   const inputs = {

@@ -4,60 +4,32 @@ import { MemoryVectorStore } from "langchain/vectorstores/memory";
 import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
 import dotenv from "dotenv";
+import { createClient } from "@supabase/supabase-js";
+import { SupabaseVectorStore } from "@langchain/community/vectorstores/supabase";
 
 dotenv.config();
 
 const API_KEY = process.env.GOOGLE_API_KEY;
 
+// Initialize Supabase
+const supabaseUrl = process.env.SUPABASE_URL!;
+const supabaseKey = process.env.SUPABASE_KEY!;
+
+const supabase = createClient(supabaseUrl, supabaseKey);
+
 export async function getRetriever() {
-  const weburls = [
-    "https://www.choosingtherapy.com/what-to-say-to-someone-with-depression/",
-    "https://www.nhs.uk/every-mind-matters/supporting-others/helping-others/",
-    "https://mhanational.org/resources/get-professional-help-if-you-need-it/",
-  ];
-
-  const pdfs = [
-    "/Users/shalwinsanju/Documents/Projects/EmoWell/EmoWell-Docs[refs]/GB_MentalHealth_ConversationAboutMentalHealth.pdf",
-    "/Users/shalwinsanju/Documents/Projects/EmoWell/EmoWell-Docs[refs]/GB_MentalHealth_HowToDealWithAnxiety.pdf",
-    "/Users/shalwinsanju/Documents/Projects/EmoWell/EmoWell-Docs[refs]/GB_MentalHealth_HowToDealWithDepression.pdf",
-    "/Users/shalwinsanju/Documents/Projects/EmoWell/EmoWell-Docs[refs]/GB_MentalHealth_MindfulnessTips.pdf",
-    "/Users/shalwinsanju/Documents/Projects/EmoWell/EmoWell-Docs[refs]/GB_MentalHealth_ParentsPromotingMentalWellness.pdf",
-  ];
-
-  // Load documents from web URLs
-  const webDocs = await Promise.all(
-    weburls.map((url) => new CheerioWebBaseLoader(url).load())
-  );
-  const webDocsList = webDocs.flat();
-
-  // Load PDFs
-  const pdfLoaders = pdfs.map(
-    (pdfPath) => new PDFLoader(pdfPath, { parsedItemSeparator: "" })
-  );
-  const pdfDocs = await Promise.all(pdfLoaders.map((loader) => loader.load()));
-  const pdfDocsList = pdfDocs.flat();
-
-  // Merge all documents
-  const allDocs = [...webDocsList, ...pdfDocsList];
-
-  // Split documents into smaller chunks
-  const textSplitter = new RecursiveCharacterTextSplitter({
-    chunkSize: 500,
-    chunkOverlap: 250,
-  });
-
-  const docSplits = await textSplitter.splitDocuments(allDocs);
-
   // Google Generative AI Embeddings
   const embeddings = new GoogleGenerativeAIEmbeddings({
     apiKey: `${API_KEY}`,
   });
 
-  // Add to vector store
-  const vectorStore = await MemoryVectorStore.fromDocuments(
-    docSplits,
-    embeddings
-  );
+  const vectorStore = await SupabaseVectorStore.fromExistingIndex(embeddings, {
+    client: supabase,
+    tableName: "rag_docs", // or whatever your table name is
+    queryName: "match_documents", // your RPC function name, can customize
+  });
 
-  return vectorStore.asRetriever();
+  const retriever = vectorStore.asRetriever();
+
+  return retriever;
 }
