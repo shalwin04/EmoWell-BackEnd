@@ -41,7 +41,7 @@ const model = new ChatGoogleGenerativeAI({
 // });
 
 /**
- * Therapy Agent - Takes in the generation from RAG and refines it.
+ * Therapy Agent - Takes in the generation from RAG and the summary of user's messages to refine the final response.
  *
  * @param {typeof GraphState.State} state The current state of the graph.
  * @returns {Promise<Partial<typeof GraphState.State>>} The new state object.
@@ -52,34 +52,37 @@ export async function TherapyResponse(
   console.log("---THERAPY AGENT---");
 
   const prompt = ChatPromptTemplate.fromTemplate(`
-  You are a compassionate and experienced mental health therapist. You are proficient in COGNITIVE BEHAVIORAL THERAPY (CBT) and other therapeutic techniques.
-  You are here to provide thoughtful and supportive responses to the user.
+You are a compassionate and experienced mental health therapist. You are proficient in Cognitive Behavioral Therapy (CBT) and other therapeutic techniques.
+You provide thoughtful, supportive responses grounded in context and emotional insight.
 
-  The user has shared the following message:
-  "{userMessage}"
+The user has shared the following message:
+"{userMessage}"
 
-  Here is the AI-generated draft response:
-  "{generation}"
+Here is a summary of the user's recent thoughts and emotions:
+"{summary}"
 
-  Please rewrite the response so that it directly addresses the user's message with empathy and clarity.
+And here is the AI-generated draft response to their message:
+"{generation}"
 
-  Your final response should:
-  1. Acknowledge the user's emotions with empathy.
-  2. Offer gentle encouragement or a small, actionable step.
-  3. End with an open-ended question that encourages self-reflection or engagement.
+Please rewrite the response to be more empathetic, insightful, and emotionally attuned to the user's mental state.
 
-  Write in a warm, supportive, and concise tone that sounds human and natural. 
-  Only return the refined therapist response—no extra formatting or explanation.
-  `);
+Your final response should:
+1. Acknowledge the user's emotions with empathy.
+2. Offer gentle encouragement or a small, actionable step.
+3. End with an open-ended question that encourages self-reflection or engagement.
+
+Write in a warm, supportive, and concise tone that sounds human and natural.
+Only return the refined therapist response—no extra formatting or explanation.
+`);
 
   const chain = prompt.pipe(model).pipe(new StringOutputParser());
 
   let therapyResponse = await chain.invoke({
     userMessage: state.question,
     generation: state.generation,
+    summary: state.summary,
   });
 
-  // Clean up intro phrases
   therapyResponse = therapyResponse
     .replace(
       /^(Okay,|Here's a revised version|A refined response:).*?:\s*/i,
@@ -89,5 +92,6 @@ export async function TherapyResponse(
 
   return {
     therapyResponse,
+    lastTherapyTime: Date.now(),
   };
 }

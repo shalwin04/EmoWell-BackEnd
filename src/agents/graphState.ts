@@ -29,4 +29,11 @@ export const GraphState = Annotation.Root({
   startTime: Annotation<number>({
     reducer: (x, y) => y ?? x,
   }),
+  summary: Annotation<string>({
+    reducer: (x, y) => y ?? x,
+    default: () => "",
+  }),
+  lastTherapyTime: Annotation<number>({
+    reducer: (x, y) => y ?? x,
+  }),
 });

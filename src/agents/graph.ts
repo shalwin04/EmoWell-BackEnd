@@ -13,10 +13,12 @@ import {
   gradeGenerationVDocuments,
 } from "./ragAgent.js";
 import { TherapyResponse } from "./therapyAgent.js";
+import { summaryAgent } from "./summaryAgent.js";
+import { shouldSummarizeByTime } from "./summaryAgent.js";
 import { MemorySaver } from "@langchain/langgraph";
 
+// Build state graph
 const workflow = new StateGraph(GraphState)
-  // Define the nodes
   .addNode("retrieve", retrieve)
   .addNode("gradeDocuments", gradeDocuments)
   .addNode("generate", generate)
@@ -26,9 +28,10 @@ const workflow = new StateGraph(GraphState)
   )
   .addNode("transformQuery", transformQuery)
   .addNode("generateGenerationVQuestionGrade", generateGenerationVQuestionGrade)
-  .addNode("TherapyResponse", TherapyResponse);
+  .addNode("TherapyResponse", TherapyResponse)
+  .addNode("summaryAgent", summaryAgent);
 
-// Build graph
+// Main execution edges
 workflow.addEdge(START, "retrieve");
 workflow.addEdge("retrieve", "gradeDocuments");
 workflow.addConditionalEdges("gradeDocuments", decideToGenerate, {
@@ -46,19 +49,17 @@ workflow.addConditionalEdges(
     "not supported": "generate",
   }
 );
-workflow.addEdge("generate", "TherapyResponse"); // Pass generation to therapy agent
-workflow.addEdge("TherapyResponse", END);
+workflow.addEdge("generate", "TherapyResponse");
 
-// workflow.addConditionalEdges(
-//   "generateGenerationVQuestionGrade",
-//   gradeGenerationVQuestion,
-//   {
-//     useful: END,
-//     "not useful": "transformQuery",
-//   }
-// );
+// 🔁 Conditionally call summaryAgent after TherapyResponse
+workflow.addConditionalEdges("TherapyResponse", shouldSummarizeByTime, {
+  summarize: "summaryAgent",
+  skip: END,
+});
+
+workflow.addEdge("summaryAgent", END);
+
 const checkpointer = new MemorySaver();
-// Compile
 const compiledGraph = workflow.compile({ checkpointer });
 
 export { compiledGraph };
