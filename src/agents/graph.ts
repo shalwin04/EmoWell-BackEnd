@@ -16,6 +16,9 @@ import { TherapyResponse } from "./therapyAgent.js";
 import { summaryAgent } from "./summaryAgent.js";
 import { shouldSummarizeByTime } from "./summaryAgent.js";
 import { MemorySaver } from "@langchain/langgraph";
+import { journalAgent } from "./journalAgent.js";
+import { checkIfJournalEntry } from "./journalAgent.js";
+import { EmergencyAgent } from "./emergencyAgent.js";
 
 // Build state graph
 const workflow = new StateGraph(GraphState)
@@ -29,10 +32,17 @@ const workflow = new StateGraph(GraphState)
   .addNode("transformQuery", transformQuery)
   .addNode("generateGenerationVQuestionGrade", generateGenerationVQuestionGrade)
   .addNode("TherapyResponse", TherapyResponse)
-  .addNode("summaryAgent", summaryAgent);
+  .addNode("summaryAgent", summaryAgent)
+  .addNode("journalAgent", journalAgent)
+  .addNode("EmergencyAgent", EmergencyAgent);
 
 // Main execution edges
-workflow.addEdge(START, "retrieve");
+workflow.addConditionalEdges(START, checkIfJournalEntry, {
+  journalAgent: "journalAgent",
+  retrieve: "retrieve",
+});
+workflow.addEdge("journalAgent", "EmergencyAgent");
+workflow.addEdge("EmergencyAgent", END);
 workflow.addEdge("retrieve", "gradeDocuments");
 workflow.addConditionalEdges("gradeDocuments", decideToGenerate, {
   transformQuery: "transformQuery",
@@ -53,8 +63,8 @@ workflow.addEdge("generate", "TherapyResponse");
 
 // 🔁 Conditionally call summaryAgent after TherapyResponse
 workflow.addConditionalEdges("TherapyResponse", shouldSummarizeByTime, {
-  summarize: "summaryAgent",
-  skip: END,
+  summarize: "summaryAgent", // If time is right, summarize using summaryAgent
+  skip: END, // If no need to summarize, skip to END
 });
 
 workflow.addEdge("summaryAgent", END);

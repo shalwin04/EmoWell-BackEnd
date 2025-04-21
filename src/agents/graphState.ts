@@ -33,7 +33,38 @@ export const GraphState = Annotation.Root({
     reducer: (x, y) => y ?? x,
     default: () => "",
   }),
+  journalEntry: Annotation<string>({
+    reducer: (x, y) => y ?? x,
+    default: () => "",
+  }),
+  journalSummary: Annotation<string>({
+    reducer: (x, y) => y ?? x,
+    default: () => "",
+  }),
+  mood_keyword: Annotation<string>({
+    reducer: (x, y) => y ?? x ?? "mental health",
+  }),
   lastTherapyTime: Annotation<number>({
     reducer: (x, y) => y ?? x,
+  }),
+  riskLevel: Annotation<string>({
+    reducer: (x, y) => y ?? x,
+    default: () => "low",
+  }),
+  emergencyAlert: Annotation<string>({
+    reducer: (x, y) => y ?? x ?? "",
+    default: () => "",
+  }),
+  userId: Annotation<string>({
+    reducer: (x, y) => y ?? x,
+  }),
+  userName: Annotation<string>({
+    reducer: (x, y) => y ?? x ?? "",
+  }),
+  emergencyContact: Annotation<string>({
+    reducer: (x, y) => y ?? x ?? "",
+  }),
+  youtubeResults: Annotation<DocumentInterface[]>({
+    reducer: (x, y) => x.concat(y),
   }),
 });

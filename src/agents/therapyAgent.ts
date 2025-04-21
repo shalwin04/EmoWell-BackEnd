@@ -61,6 +61,9 @@ The user has shared the following message:
 Here is a summary of the user's recent thoughts and emotions:
 "{summary}"
 
+Here is a summary of the user's recent journal entries:
+"{journalSummary}"
+
 And here is the AI-generated draft response to their message:
 "{generation}"
 
@@ -81,6 +84,7 @@ Only return the refined therapist response—no extra formatting or explanation.
     userMessage: state.question,
     generation: state.generation,
     summary: state.summary,
+    journalSummary: state.journalSummary,
   });
 
   therapyResponse = therapyResponse
